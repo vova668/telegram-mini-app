@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="app">
+  <main class="app" id="shopView">
 
     <!-- Баланс -->
     <section class="card balance">
@@ -94,6 +94,24 @@
     </nav>
 
   </main>
+  <!-- ===== Экран оформления заказа ===== -->
+  <main class="app" id="checkoutView" hidden>
+
+    <section class="card checkout-sum">
+      <p class="big-sum" id="coSum">0$</p>
+      <p class="co-qty" id="coQty"></p>
+    </section>
+
+    <p class="tag">Выберите способ оплаты</p>
+    <div class="pay-list" id="payList"></div>
+
+    <button class="pay-btn" id="coBack">
+      <b>Назад</b>
+      <span>Вернуться в магазин</span>
+    </button>
+
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>

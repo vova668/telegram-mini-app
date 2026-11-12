@@ -45,6 +45,14 @@ const CONFIG = {
     support: "",   // например "https://t.me/твой_ник"
   },
 
+  // Способы оплаты на экране заказа
+  payments: [
+    { id: "ton",    title: "TON / USDT (TON)", subtitle: "автоматическая оплата · без загрузки чека",
+      note: "Проверяем перевод автоматически и сразу выдаём ключи после подтверждения сети" },
+    { id: "card",   title: "Банковская карта", note: "Сбер, Т-Банк, Альфа, ВТБ, перевод по номеру карты" },
+    { id: "crypto", title: "Другая криптовалюта", note: "USDT TRC20/BEP20, BTC, ETH, LTC, TRX, BNB" },
+  ],
+
   info: "Ключи активируются в Steam / Epic / другой платформе, указанной в описании. После оплаты ключ приходит сюда в чат.",
 };
 
@@ -149,17 +157,46 @@ function order(qty) {
     notify("Введите количество");
     return;
   }
-  const each = priceFor(qty);
-  const sum = each * qty;
-  const bonus = qty >= CONFIG.bonus.minQty ? `\n🎁 Бонус: +1 ${CONFIG.item} в подарок` : "";
-  const text = `${qty} ${word(qty)} по ${money(each)}\nИтого: ${money(sum)}${bonus}\n\nОплата будет подключена позже.`;
   tg?.HapticFeedback?.impactOccurred("medium");
-  if (tg?.showPopup) {
-    tg.showPopup({ title: "Ваш заказ", message: text, buttons: [{ type: "ok" }] });
-  } else {
-    alert(text);
-  }
+  showCheckout(qty);
 }
+
+// --- Экран оформления заказа ---
+let currentQty = 0;
+
+function showCheckout(qty) {
+  currentQty = qty;
+  const each = priceFor(qty);
+  $("coSum").textContent = money(each * qty);
+  const bonus = qty >= CONFIG.bonus.minQty ? " + 1 в подарок" : "";
+  $("coQty").textContent = `${qty} ${word(qty)}${bonus}`;
+
+  $("payList").innerHTML = CONFIG.payments
+    .map((p) => `<button class="pay-btn" data-pay="${p.id}"><b>${p.title}</b>${p.subtitle ? `<span>${p.subtitle}</span>` : ""}</button>${p.note ? `<p class="pay-note">${p.note}</p>` : ""}`)
+    .join("");
+  document.querySelectorAll("[data-pay]").forEach((b) => b.addEventListener("click", () => pay(b.dataset.pay)));
+
+  $("shopView").hidden = true;
+  $("checkoutView").hidden = false;
+  window.scrollTo(0, 0);
+  tg?.BackButton?.show();
+}
+
+function hideCheckout() {
+  $("checkoutView").hidden = true;
+  $("shopView").hidden = false;
+  window.scrollTo(0, 0);
+  tg?.BackButton?.hide();
+}
+
+function pay(method) {
+  const p = CONFIG.payments.find((x) => x.id === method);
+  const sum = money(priceFor(currentQty) * currentQty);
+  notify(`${p.title}: ${sum} за ${currentQty} ${word(currentQty)}.\n\nПриём оплаты пока не подключён.`);
+}
+
+$("coBack").addEventListener("click", hideCheckout);
+tg?.BackButton?.onClick(hideCheckout);
 
 function notify(msg) {
   if (tg?.showAlert) tg.showAlert(msg);
