@@ -60,6 +60,19 @@ const CONFIG = {
     xrocketGuide: "", // ссылка на гайд по xRocket (если есть)
   },
 
+  // Оплата другой криптовалютой.
+  // ↓↓↓ ВСТАВЬ АДРЕСА СВОИХ КОШЕЛЬКОВ в поле address ↓↓↓
+  // cg — id монеты на CoinGecko для курса (для стейблкоинов курс = 1)
+  crypto: [
+    { id: "usdt_trc20", coin: "USDT", network: "TRC20 (Tron)",  cg: null,          decimals: 6, address: "ВСТАВЬТЕ_АДРЕС_USDT_TRC20" },
+    { id: "usdt_bep20", coin: "USDT", network: "BEP20 (BSC)",   cg: null,          decimals: 6, address: "ВСТАВЬТЕ_АДРЕС_USDT_BEP20" },
+    { id: "btc",        coin: "BTC",  network: "Bitcoin",       cg: "bitcoin",     decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_BTC" },
+    { id: "eth",        coin: "ETH",  network: "Ethereum",      cg: "ethereum",    decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_ETH" },
+    { id: "ltc",        coin: "LTC",  network: "Litecoin",      cg: "litecoin",    decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_LTC" },
+    { id: "trx",        coin: "TRX",  network: "Tron",          cg: "tron",        decimals: 6, address: "ВСТАВЬТЕ_АДРЕС_TRX" },
+    { id: "bnb",        coin: "BNB",  network: "BEP20 (BSC)",   cg: "binancecoin", decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_BNB" },
+  ],
+
   info: "Ключи активируются в Steam / Epic / другой платформе, указанной в описании. После оплаты ключ приходит сюда в чат.",
 };
 
@@ -198,6 +211,7 @@ function hideCheckout() {
 
 function pay(method) {
   if (method === "ton") return showTon();
+  if (method === "crypto") return showCrypto();
   const p = CONFIG.payments.find((x) => x.id === method);
   const sum = money(priceFor(currentQty) * currentQty);
   notify(`${p.title}: ${sum} за ${currentQty} ${word(currentQty)}.\n\nПриём оплаты пока не подключён.`);
@@ -366,9 +380,91 @@ async function copyText(text, okMsg) {
   notify(okMsg);
 }
 
+// --- Экран оплаты другой криптовалютой ---
+let cryptoChoice = null;
+let cryptoAmountText = "";
+
+function isPlaceholder(addr) {
+  return !addr || addr.startsWith("ВСТАВЬТЕ");
+}
+
+function showCrypto() {
+  $("coinGrid").innerHTML = CONFIG.crypto
+    .map((c) => `<button class="coin-btn" data-crypto="${c.id}"><b>${c.coin}</b><span>${c.network}</span></button>`)
+    .join("");
+  document.querySelectorAll("[data-crypto]").forEach((b) => b.addEventListener("click", () => pickCrypto(b.dataset.crypto)));
+  $("cryptoTitle").textContent = "ДРУГАЯ КРИПТОВАЛЮТА";
+  $("cryptoPick").hidden = false;
+  $("cryptoPay").hidden = true;
+  $("checkoutView").hidden = true;
+  $("cryptoView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function hideCrypto() {
+  if (!$("cryptoPay").hidden) {
+    // с реквизитов — обратно к выбору монеты
+    $("cryptoPay").hidden = true;
+    $("cryptoPick").hidden = false;
+    $("cryptoTitle").textContent = "ДРУГАЯ КРИПТОВАЛЮТА";
+  } else {
+    $("cryptoView").hidden = true;
+    $("checkoutView").hidden = false;
+  }
+  window.scrollTo(0, 0);
+}
+
+async function pickCrypto(id) {
+  const c = CONFIG.crypto.find((x) => x.id === id);
+  cryptoChoice = c;
+  const usd = priceFor(currentQty) * currentQty;
+
+  $("cryptoTitle").textContent = `${c.coin} · ${c.network}`.toUpperCase();
+  $("cryptoLabel").textContent = `Оплата ${c.coin} · ${c.network}`;
+  $("cryptoSum").textContent = money(usd);
+  $("cryptoQty").textContent = `${currentQty} ${word(currentQty)}`;
+  $("cryptoCoin").textContent = c.coin;
+  $("cryptoAddrLabel").textContent = `Адрес ${c.coin} · сеть ${c.network}`;
+  $("cryptoRules").innerHTML = [
+    `Отправляйте только ${c.coin} и только в сети ${c.network}`,
+    "Отправьте ровно указанную сумму — по точной сумме система находит ваш заказ",
+    "Учитывайте комиссию биржи или кошелька: до адреса должна дойти вся сумма",
+    "После подтверждения сети ключи придут в чат с ботом",
+  ].map((t) => `<li>${t}</li>`).join("");
+
+  const ph = isPlaceholder(c.address);
+  $("cryptoAddress").textContent = ph ? "Адрес кошелька ещё не указан" : c.address;
+  $("cryptoAddress").classList.toggle("placeholder", ph);
+
+  $("cryptoPick").hidden = true;
+  $("cryptoPay").hidden = false;
+  window.scrollTo(0, 0);
+
+  cryptoAmountText = "";
+  $("cryptoAmount").textContent = "…";
+  $("cryptoRate").textContent = "";
+
+  try {
+    let rate = 1;
+    if (c.cg) {
+      const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${c.cg}&vs_currencies=usd`);
+      rate = (await r.json())[c.cg].usd;
+    }
+    const step = Math.pow(10, -c.decimals);
+    const tail = (Math.floor(Math.random() * 900) + 100) * step; // уникальный хвост в последних знаках
+    cryptoAmountText = (usd / rate + tail).toFixed(c.decimals);
+    $("cryptoAmount").textContent = cryptoAmountText;
+    $("cryptoRate").textContent = c.cg ? `1 ${c.coin} = ${rate.toLocaleString("en-US")} USD` : `1 ${c.coin} ≈ 1 USD`;
+  } catch (e) {
+    $("cryptoAmount").textContent = "—";
+    $("cryptoRate").textContent = `Не удалось получить курс ${c.coin}. Попробуйте ещё раз.`;
+  }
+}
+
 // Системная кнопка «назад» Telegram: с экрана TON — к заказу, с заказа — в магазин
 function goBack() {
-  if (!$("payView").hidden) hidePay();
+  if (!$("cryptoView").hidden) hideCrypto();
+  else if (!$("payView").hidden) hidePay();
   else if (!$("termsView").hidden) hideTerms();
   else if (!$("tonView").hidden) hideTon();
   else hideCheckout();
@@ -390,6 +486,14 @@ $("copyAddress").addEventListener("click", () => {
 $("checkNow").addEventListener("click", () => notify("Проверка оплаты пока не подключена."));
 $("paySupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
 $("xrocketGuide").addEventListener("click", () => openLink(CONFIG.ton.xrocketGuide, "Гайд скоро появится"));
+$("cryptoBack").addEventListener("click", hideCrypto);
+$("cryptoCopyAmount").addEventListener("click", () => copyText(cryptoAmountText, "Сумма скопирована"));
+$("cryptoCopyAddress").addEventListener("click", () => {
+  if (!cryptoChoice || isPlaceholder(cryptoChoice.address)) return notify("Адрес кошелька ещё не указан");
+  copyText(cryptoChoice.address, "Адрес скопирован");
+});
+$("cryptoCheck").addEventListener("click", () => notify("Проверка оплаты пока не подключена."));
+$("cryptoSupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
 tg?.BackButton?.onClick(goBack);
 
 function notify(msg) {

@@ -331,3 +331,19 @@ button:active { transform: scale(0.97); }
   padding: 14px; border-radius: 999px;
 }
 .footnote { text-align: center; font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+/* ===== Экран другой криптовалюты ===== */
+.coin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
+.coin-btn {
+  background: linear-gradient(180deg, #284a40, #1d3a33);
+  border: 1px solid rgba(142, 230, 184, 0.22);
+  border-radius: 22px;
+  padding: 16px 10px;
+  color: var(--text);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.coin-btn b { font-size: 17px; }
+.coin-btn span { font-size: 12px; color: #a9b7b2; }
+.warn-box { border-color: rgba(240, 201, 92, 0.25); }
+.warn-box .label { color: #f0c95c; }
+#cryptoPay { display: flex; flex-direction: column; gap: 16px; }

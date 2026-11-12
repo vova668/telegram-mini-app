@@ -242,6 +242,61 @@
 
   </main>
 
+  <!-- ===== Экран оплаты другой криптовалютой ===== -->
+  <main class="app" id="cryptoView" hidden>
+
+    <header class="topbar">
+      <button class="back-btn" id="cryptoBack">← Назад</button>
+      <span class="topbar-title" id="cryptoTitle">ДРУГАЯ КРИПТОВАЛЮТА</span>
+    </header>
+
+    <!-- Шаг 1: выбор монеты -->
+    <section class="card" id="cryptoPick">
+      <div class="inner-box">
+        <p class="label">Оплата криптовалютой</p>
+        <p class="inner-text">Выберите монету и сеть. Отправляйте перевод только в той сети, которую выбрали, — перевод в другой сети будет потерян.</p>
+      </div>
+      <div class="coin-grid" id="coinGrid"></div>
+    </section>
+
+    <!-- Шаг 2: реквизиты -->
+    <div id="cryptoPay" hidden>
+      <section class="card center-card">
+        <p class="label center" id="cryptoLabel">Оплата</p>
+        <p class="mid-sum" id="cryptoSum">0$</p>
+        <p class="co-qty" id="cryptoQty"></p>
+        <div class="to-send">
+          <span class="to-send-label">К отправке:</span>
+          <span class="to-send-amount" id="cryptoAmount">…</span>
+          <span class="to-send-coin" id="cryptoCoin"></span>
+        </div>
+        <p class="footnote" id="cryptoRate"></p>
+      </section>
+
+      <section class="card">
+        <div class="inner-box warn-box">
+          <p class="label">Важно</p>
+          <ol class="rules" id="cryptoRules"></ol>
+        </div>
+
+        <div class="inner-box">
+          <p class="label" id="cryptoAddrLabel">Адрес для перевода</p>
+          <p class="address" id="cryptoAddress"></p>
+        </div>
+
+        <div class="pay-list ton-list">
+          <button class="pay-btn" id="cryptoCopyAmount"><b>Копировать сумму</b><span>точная сумма — по ней находим ваш заказ</span></button>
+          <button class="pay-btn" id="cryptoCopyAddress"><b>Копировать адрес</b><span>скопировать в буфер обмена</span></button>
+          <button class="pay-btn" id="cryptoCheck"><b>Проверить сейчас</b><span>обычно проверяется автоматически</span></button>
+          <button class="pay-btn" id="cryptoSupport"><b>Поддержка</b><span>поможем с любым вопросом</span></button>
+        </div>
+
+        <p class="status">Ожидаем перевод. Проверяем автоматически каждые 10 секунд.</p>
+      </section>
+    </div>
+
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
