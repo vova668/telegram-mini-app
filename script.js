@@ -53,6 +53,13 @@ const CONFIG = {
     { id: "crypto", title: "Другая криптовалюта", note: "USDT TRC20/BEP20, BTC, ETH, LTC, TRX, BNB" },
   ],
 
+  // Оплата в сети TON
+  ton: {
+    // ↓↓↓ ВСТАВЬ СЮДА АДРЕС СВОЕГО TON-КОШЕЛЬКА ↓↓↓
+    wallet: "ВСТАВЬТЕ_АДРЕС_TON_КОШЕЛЬКА",
+    xrocketGuide: "", // ссылка на гайд по xRocket (если есть)
+  },
+
   info: "Ключи активируются в Steam / Epic / другой платформе, указанной в описании. После оплаты ключ приходит сюда в чат.",
 };
 
@@ -190,13 +197,200 @@ function hideCheckout() {
 }
 
 function pay(method) {
+  if (method === "ton") return showTon();
   const p = CONFIG.payments.find((x) => x.id === method);
   const sum = money(priceFor(currentQty) * currentQty);
   notify(`${p.title}: ${sum} за ${currentQty} ${word(currentQty)}.\n\nПриём оплаты пока не подключён.`);
 }
 
+// --- Экран оплаты в сети TON ---
+function showTon() {
+  $("checkoutView").hidden = true;
+  $("tonView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function hideTon() {
+  $("tonView").hidden = true;
+  $("checkoutView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+// --- Экран условий перед оплатой ---
+let currentCoin = "TON";
+
+function payCoin(coin) {
+  currentCoin = coin;
+  const name = coin === "TON" ? "TON" : "USDT (TON)";
+  $("termsTitle").textContent = `УСЛОВИЯ · ${name}`;
+  $("termsLabel").textContent = `Перед оплатой ${name}`;
+  $("termsCheck").checked = false;
+  $("termsOk").disabled = true;
+  $("tonView").hidden = true;
+  $("termsView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function hideTerms() {
+  $("termsView").hidden = true;
+  $("tonView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function termsAccepted() {
+  showPay();
+}
+
+// --- Экран автооплаты ---
+let payAmountText = "";
+
+function coinName() {
+  return currentCoin === "TON" ? "TON" : "USDT";
+}
+
+// Небольшой уникальный «хвост» к сумме: по нему сервер найдёт заказ без комментария
+function uniqueTail() {
+  return (Math.floor(Math.random() * 900) + 100) / 1e9; // 0.000000100 … 0.000000999
+}
+
+async function showPay() {
+  const usd = priceFor(currentQty) * currentQty;
+  const coin = coinName();
+  const isTon = currentCoin === "TON";
+
+  $("payTitle").textContent = `АВТООПЛАТА · ${isTon ? "TON" : "USDT (TON)"}`;
+  $("payLabel").textContent = `Автоматическая оплата ${isTon ? "TON" : "USDT (TON)"}`;
+  $("paySum").textContent = money(usd);
+  $("payQty").textContent = `${currentQty} ${word(currentQty)}`;
+  $("payCoin").textContent = coin;
+  $("addrLabel").textContent = `Адрес для перевода ${isTon ? "TON" : "USDT (сеть TON)"}`;
+  $("payRules").innerHTML = [
+    `Отправьте ровно указанную сумму ${coin} на адрес заказа — по точной сумме система находит ваш заказ`,
+    "Не округляйте сумму и не отправляйте её частями",
+    "Оставайтесь на этом экране — платёж проверяется автоматически",
+    "После подтверждения сети ключи придут в чат с ботом",
+    "«Проверить сейчас» можно использовать как ручной повтор проверки",
+  ].map((t) => `<li>${t}</li>`).join("");
+
+  const wallet = CONFIG.ton.wallet;
+  const placeholder = !wallet || wallet.startsWith("ВСТАВЬТЕ");
+  $("payAddress").textContent = placeholder ? "Адрес кошелька ещё не указан" : wallet;
+  $("payAddress").classList.toggle("placeholder", placeholder);
+
+  $("termsView").hidden = true;
+  $("payView").hidden = false;
+  window.scrollTo(0, 0);
+
+  $("payAmount").textContent = "…";
+  $("payRate").textContent = "";
+  $("chartCard").hidden = !isTon;
+
+  if (!isTon) {
+    payAmountText = (usd + uniqueTail() * 1000).toFixed(6); // USDT: 6 знаков
+    $("payAmount").textContent = payAmountText;
+    $("payRate").textContent = "1 USDT ≈ 1 USD";
+    return;
+  }
+
+  try {
+    const r = await fetch("https://api.coingecko.com/api/v3/coins/the-open-network/market_chart?vs_currency=usd&days=1");
+    const data = await r.json();
+    const prices = data.prices;
+    const rate = prices[prices.length - 1][1];
+    payAmountText = (usd / rate + uniqueTail()).toFixed(9); // TON: 9 знаков
+    $("payAmount").textContent = payAmountText;
+    $("payRate").textContent = `1 TON = ${rate.toFixed(4)} USD`;
+    drawChart(prices);
+  } catch (e) {
+    payAmountText = "";
+    $("payAmount").textContent = "—";
+    $("payRate").textContent = "Не удалось получить курс TON. Попробуйте открыть экран ещё раз.";
+    $("chartCard").hidden = true;
+  }
+}
+
+function drawChart(prices) {
+  const W = 340, H = 200, L = 34, B = 26, T = 8, R = 4;
+  const ys = prices.map((p) => p[1]);
+  const min = Math.min(...ys), max = Math.max(...ys);
+  const pad = (max - min) * 0.1 || 0.01;
+  const lo = min - pad, hi = max + pad;
+  const x = (i) => L + (i / (prices.length - 1)) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const line = prices.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(prices.length - 1).toFixed(1)},${H - B} L${L},${H - B} Z`;
+
+  let grid = "";
+  for (let k = 0; k <= 4; k++) {
+    const v = lo + ((hi - lo) * k) / 4;
+    grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,0.06)"/>`;
+    grid += `<text x="${L - 4}" y="${y(v) + 3}" fill="#8f9b97" font-size="9" text-anchor="end">${v.toFixed(2).replace(".", ",")}</text>`;
+  }
+  for (let k = 0; k <= 4; k++) {
+    const i = Math.round(((prices.length - 1) * k) / 4);
+    const d = new Date(prices[i][0]);
+    const label = `${String(d.getHours()).padStart(2, "0")}:00`;
+    const anchor = k === 0 ? "start" : k === 4 ? "end" : "middle";
+    grid += `<text x="${x(i)}" y="${H - 8}" fill="#8f9b97" font-size="9" text-anchor="${anchor}">${label}</text>`;
+  }
+
+  $("chart").innerHTML = `
+    <defs><linearGradient id="fillG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ee6b8" stop-opacity="0.35"/><stop offset="1" stop-color="#8ee6b8" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" fill="url(#fillG)"/>
+    <path d="${line}" fill="none" stroke="#8ee6b8" stroke-width="2" stroke-linejoin="round"/>`;
+
+  const change = ((ys[ys.length - 1] - ys[0]) / ys[0]) * 100;
+  $("chartChange").textContent = `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+  $("chartChange").classList.toggle("down", change < 0);
+}
+
+function hidePay() {
+  $("payView").hidden = true;
+  $("termsView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+async function copyText(text, okMsg) {
+  if (!text) return notify("Нечего копировать");
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const t = document.createElement("textarea");
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand("copy"); t.remove();
+  }
+  tg?.HapticFeedback?.notificationOccurred("success");
+  notify(okMsg);
+}
+
+// Системная кнопка «назад» Telegram: с экрана TON — к заказу, с заказа — в магазин
+function goBack() {
+  if (!$("payView").hidden) hidePay();
+  else if (!$("termsView").hidden) hideTerms();
+  else if (!$("tonView").hidden) hideTon();
+  else hideCheckout();
+}
+
 $("coBack").addEventListener("click", hideCheckout);
-tg?.BackButton?.onClick(hideCheckout);
+$("tonBack").addEventListener("click", hideTon);
+document.querySelectorAll("[data-coin]").forEach((b) => b.addEventListener("click", () => payCoin(b.dataset.coin)));
+$("termsBack").addEventListener("click", hideTerms);
+$("termsCheck").addEventListener("change", (e) => ($("termsOk").disabled = !e.target.checked));
+$("termsOk").addEventListener("click", termsAccepted);
+$("payBack").addEventListener("click", hidePay);
+$("copyAmount").addEventListener("click", () => copyText(payAmountText, "Сумма скопирована"));
+$("copyAddress").addEventListener("click", () => {
+  const w = CONFIG.ton.wallet;
+  if (!w || w.startsWith("ВСТАВЬТЕ")) return notify("Адрес кошелька ещё не указан");
+  copyText(w, "Адрес скопирован");
+});
+$("checkNow").addEventListener("click", () => notify("Проверка оплаты пока не подключена."));
+$("paySupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
+$("xrocketGuide").addEventListener("click", () => openLink(CONFIG.ton.xrocketGuide, "Гайд скоро появится"));
+tg?.BackButton?.onClick(goBack);
 
 function notify(msg) {
   if (tg?.showAlert) tg.showAlert(msg);

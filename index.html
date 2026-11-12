@@ -112,6 +112,136 @@
 
   </main>
 
+  <!-- ===== Экран оплаты в сети TON ===== -->
+  <main class="app" id="tonView" hidden>
+
+    <header class="topbar">
+      <button class="back-btn" id="tonBack">← Назад</button>
+      <span class="topbar-title">TON / USDT (TON)</span>
+    </header>
+
+    <section class="card">
+      <div class="inner-box">
+        <p class="label">Автоматическая оплата · сеть TON</p>
+        <p class="inner-text">Выберите валюту в сети TON. Чек загружать не нужно — перевод проверяется автоматически, а после подтверждения ключи придут в чат с ботом.</p>
+      </div>
+      <div class="pay-list ton-list">
+        <button class="pay-btn" data-coin="TON">
+          <b>Оплатить TON</b>
+          <span>нативная монета TON · автоматическое подтверждение</span>
+        </button>
+        <button class="pay-btn" data-coin="USDT">
+          <b>Оплатить USDT (TON)</b>
+          <span>USDT только в сети TON · автоматическое подтверждение</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== Экран условий перед оплатой ===== -->
+  <main class="app" id="termsView" hidden>
+
+    <header class="topbar">
+      <button class="back-btn" id="termsBack">← Назад</button>
+      <span class="topbar-title" id="termsTitle">УСЛОВИЯ · TON</span>
+    </header>
+
+    <section class="card">
+      <div class="inner-box">
+        <p class="label" id="termsLabel">Перед оплатой TON</p>
+        <ol class="rules">
+          <li>Отправляйте точную сумму, которая будет указана на следующем экране.</li>
+          <li>Обязательно добавьте комментарий к платежу без изменений.</li>
+          <li>Без комментария система не сможет автоматически связать перевод с вашим заказом.</li>
+          <li>Не отправляйте перевод до появления адреса и комментария на следующем экране.</li>
+          <li>После отправки дождитесь автоматического подтверждения оплаты.</li>
+        </ol>
+      </div>
+
+      <label class="inner-box agree">
+        <input type="checkbox" id="termsCheck" />
+        <span class="agree-text">
+          Я прочитал и принимаю условия
+          <small>Без подтверждения адрес, сумма и комментарий платежа не будут показаны.</small>
+        </span>
+      </label>
+
+      <button class="pay-btn terms-btn" id="termsOk" disabled>
+        <b>Я прочитал условия</b>
+        <span>показать адрес, сумму и комментарий</span>
+      </button>
+    </section>
+
+  </main>
+
+  <!-- ===== Экран автооплаты TON / USDT ===== -->
+  <main class="app" id="payView" hidden>
+
+    <header class="topbar">
+      <button class="back-btn" id="payBack">← Назад</button>
+      <span class="topbar-title" id="payTitle">АВТООПЛАТА · TON</span>
+    </header>
+
+    <section class="card center-card">
+      <p class="label center" id="payLabel">Автоматическая оплата TON</p>
+      <p class="mid-sum" id="paySum">0$</p>
+      <p class="co-qty" id="payQty"></p>
+      <div class="to-send">
+        <span class="to-send-label">К отправке:</span>
+        <span class="to-send-amount" id="payAmount">…</span>
+        <span class="to-send-coin" id="payCoin">TON</span>
+      </div>
+      <p class="footnote" id="payRate"></p>
+    </section>
+
+    <section class="card" id="chartCard">
+      <div class="chart-head">
+        <p class="label">TON / USD — 24 часа</p>
+        <span class="change" id="chartChange"></span>
+      </div>
+      <svg id="chart" viewBox="0 0 340 200" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </section>
+
+    <section class="card">
+      <div class="inner-box">
+        <p class="label">Как оплатить автоматически</p>
+        <ol class="rules" id="payRules"></ol>
+      </div>
+
+      <div class="inner-box guide">
+        <div class="guide-head">
+          <div>
+            <p class="label accent">xRocket</p>
+            <h2>Как оплатить через xRocket</h2>
+          </div>
+          <span class="steps-chip">3 шага</span>
+        </div>
+        <ol class="steps">
+          <li><i>1</i><span>В xRocket выберите TON или USDT именно в сети TON.</span></li>
+          <li><i>2</i><span>В магазине скопируйте точную сумму и адрес для перевода.</span></li>
+          <li><i>3</i><span>Отправьте перевод и оставайтесь на экране — подтверждение и выдача выполняются автоматически.</span></li>
+        </ol>
+        <button class="outline-btn" id="xrocketGuide">Открыть гайд по xRocket</button>
+      </div>
+
+      <div class="inner-box">
+        <p class="label" id="addrLabel">Адрес для перевода TON</p>
+        <p class="address" id="payAddress"></p>
+      </div>
+
+      <div class="pay-list ton-list">
+        <button class="pay-btn" id="copyAmount"><b>Копировать сумму</b><span>точная сумма — по ней находим ваш заказ</span></button>
+        <button class="pay-btn" id="copyAddress"><b>Копировать адрес</b><span>скопировать в буфер обмена</span></button>
+        <button class="pay-btn" id="checkNow"><b>Проверить сейчас</b><span>обычно проверяется автоматически</span></button>
+        <button class="pay-btn" id="paySupport"><b>Поддержка</b><span>поможем с любым вопросом</span></button>
+      </div>
+
+      <p class="status" id="payStatus">Ожидаем перевод. Проверяем автоматически каждые 10 секунд.</p>
+    </section>
+
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
