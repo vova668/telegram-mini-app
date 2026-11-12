@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Мини-приложение</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="profile">
+      <div class="avatar" id="avatar">?</div>
+      <div>
+        <p class="hint">Добро пожаловать</p>
+        <h1 id="username">Гость</h1>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Счётчик</h2>
+      <p class="hint">Проверь, как работают кнопки и вибрация</p>
+      <div class="counter">
+        <button class="round" id="minus" aria-label="Минус">−</button>
+        <span id="count">0</span>
+        <button class="round" id="plus" aria-label="Плюс">+</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Обратная связь</h2>
+      <label for="name">Как тебя зовут?</label>
+      <input id="name" type="text" placeholder="Имя" autocomplete="off" />
+      <label for="message">Сообщение</label>
+      <textarea id="message" rows="3" placeholder="Напиши что-нибудь…"></textarea>
+      <p class="hint">Заполни поле «Сообщение» — внизу появится кнопка «Отправить».</p>
+    </section>
+
+    <p class="footer hint" id="platform"></p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
