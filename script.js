@@ -166,7 +166,7 @@ function notify(msg) {
   else alert(msg);
 }
 
-["qtyQuick", "qtyCustom"].forEach((id) => $(id).addEventListener("input", () => showTotal(id)));
+$("qtyQuick").addEventListener("input", () => showTotal("qtyQuick"));
 document.querySelectorAll("[data-order]").forEach((btn) =>
   btn.addEventListener("click", () => order(parseInt($(btn.dataset.order).value, 10)))
 );
