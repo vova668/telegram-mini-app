@@ -3,42 +3,105 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Мини-приложение</title>
+  <title>Магазин ключей</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="app">
-    <header class="profile">
-      <div class="avatar" id="avatar">?</div>
-      <div>
-        <p class="hint">Добро пожаловать</p>
-        <h1 id="username">Гость</h1>
-      </div>
-    </header>
 
-    <section class="card">
-      <h2>Счётчик</h2>
-      <p class="hint">Проверь, как работают кнопки и вибрация</p>
-      <div class="counter">
-        <button class="round" id="minus" aria-label="Минус">−</button>
-        <span id="count">0</span>
-        <button class="round" id="plus" aria-label="Плюс">+</button>
+    <!-- Баланс -->
+    <section class="card balance">
+      <p class="label">Баланс покупок</p>
+      <p class="balance-sum"><span id="balance">0</span>$</p>
+      <div class="stats">
+        <span>Заказы: <b id="orders">0</b></span>
+        <span>Куплено: <b id="bought">0</b></span>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Обратная связь</h2>
-      <label for="name">Как тебя зовут?</label>
-      <input id="name" type="text" placeholder="Имя" autocomplete="off" />
-      <label for="message">Сообщение</label>
-      <textarea id="message" rows="3" placeholder="Напиши что-нибудь…"></textarea>
-      <p class="hint">Заполни поле «Сообщение» — внизу появится кнопка «Отправить».</p>
+    <!-- Преимущества -->
+    <section class="features">
+      <div class="pill"><b>Мгновенно</b><span>Ключ сразу после оплаты</span></div>
+      <div class="pill"><b>Удобно</b><span>TON, карта, крипта</span></div>
+      <div class="pill"><b>Надёжно</b><span>Проверенные ключи</span></div>
     </section>
 
-    <p class="footer hint" id="platform"></p>
+    <!-- Прайс-лист -->
+    <section class="card">
+      <p class="label">Прайс-лист</p>
+      <ul class="price-list" id="priceList"></ul>
+    </section>
+
+    <!-- Быстрый заказ -->
+    <section class="card">
+      <h2>Быстрый заказ</h2>
+      <p class="muted">Введите количество ключей и перейдите к оплате</p>
+      <div class="order-row">
+        <input id="qtyQuick" type="number" min="1" inputmode="numeric" placeholder="Количество" />
+        <button class="btn-primary" data-order="qtyQuick">Заказать</button>
+      </div>
+      <p class="total" id="qtyQuickTotal"></p>
+    </section>
+
+    <!-- Бонус -->
+    <section class="card">
+      <div class="info-head">
+        <div class="badge-icon green">Б</div>
+        <div>
+          <h2>Бонус</h2>
+          <p class="muted" id="bonusSubtitle"></p>
+        </div>
+      </div>
+      <p class="bonus-text" id="bonusText"></p>
+    </section>
+
+    <!-- Реферальная система -->
+    <section class="card">
+      <div class="info-head">
+        <div class="badge-icon violet">Р</div>
+        <div>
+          <h2>Реферальная система</h2>
+          <p class="muted" id="refSubtitle"></p>
+        </div>
+      </div>
+      <div class="progress-row">
+        <span>Прогресс: <span id="refProgress"></span></span>
+        <span id="refPercent"></span>
+      </div>
+      <div class="progress"><div class="progress-fill" id="refBar"></div></div>
+      <div class="locked" id="refLocked"></div>
+    </section>
+
+    <!-- География -->
+    <section class="card">
+      <p class="label center">География покупателей</p>
+      <div class="geo">
+        <svg id="donut" viewBox="0 0 120 120" width="150" height="150" aria-hidden="true"></svg>
+        <ul class="legend" id="legend"></ul>
+      </div>
+    </section>
+
+    <!-- Паки -->
+    <p class="tag">Выбери свой пак</p>
+    <section class="packs" id="packs"></section>
+
+    <!-- Своё количество -->
+    <p class="tag">Своё количество</p>
+    <div class="order-row">
+      <input id="qtyCustom" type="number" min="1" inputmode="numeric" placeholder="Введите число" />
+      <button class="btn-dark" data-order="qtyCustom">Заказать</button>
+    </div>
+    <p class="total" id="qtyCustomTotal"></p>
+
+    <!-- Нижние кнопки -->
+    <nav class="bottom-nav">
+      <button class="btn-dark" id="btnReviews">Отзывы</button>
+      <button class="btn-dark" id="btnSupport">Поддержка</button>
+      <button class="btn-dark" id="btnInfo">Инфо</button>
+    </nav>
+
   </main>
-
   <script src="script.js"></script>
 </body>
 </html>

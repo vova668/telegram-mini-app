@@ -1,75 +1,186 @@
-// Объект Telegram Mini App (в обычном браузере его не будет — страница всё равно откроется)
+// ====================== НАСТРОЙКИ МАГАЗИНА ======================
+// Меняй цены, тексты и ссылки здесь — остальной код трогать не нужно.
+const CONFIG = {
+  item: "ключ",                       // как называется товар
+  currency: "$",
+
+  // Цена за 1 ключ в зависимости от количества (max: null — без верхней границы)
+  tiers: [
+    { min: 1,   max: 19,   price: 15 },
+    { min: 20,  max: 49,   price: 13 },
+    { min: 50,  max: 99,   price: 11 },
+    { min: 100, max: null, price: 10, best: true },
+  ],
+
+  // Готовые паки (цена считается по прайсу автоматически)
+  packs: [
+    { qty: 5 },
+    { qty: 25, hot: true },
+    { qty: 50 },
+  ],
+
+  bonus: {
+    minQty: 10,
+    subtitle: "При заказе от 10 ключей — +1 ключ в подарок",
+    text: "+1 ключ при первой покупке от 10 шт.",
+  },
+
+  referral: {
+    percent: 10,
+    unlockTurnover: 500,
+  },
+
+  // ВНИМАНИЕ: это ПРИМЕР. Впиши реальные цифры или убери блок из index.html.
+  geography: [
+    { name: "Россия",   value: 36, color: "#4f7fe6" },
+    { name: "Казахстан", value: 22, color: "#63c995" },
+    { name: "Украина",  value: 17, color: "#e6b84a" },
+    { name: "Германия", value: 12, color: "#8b5cf0" },
+    { name: "США",      value: 13, color: "#b9f0d4" },
+  ],
+
+  // Ссылки (поставь свои). Пустая строка — кнопка покажет заглушку.
+  links: {
+    reviews: "",   // например "https://t.me/твой_канал_с_отзывами"
+    support: "",   // например "https://t.me/твой_ник"
+  },
+
+  info: "Ключи активируются в Steam / Epic / другой платформе, указанной в описании. После оплаты ключ приходит сюда в чат.",
+};
+
+// Данные пользователя. Пока нет сервера и базы — всё по нулям.
+const USER = { balance: 0, orders: 0, bought: 0, turnover: 0 };
+// ================================================================
+
 const tg = window.Telegram?.WebApp;
-
 if (tg) {
-  tg.ready();   // сообщаем Telegram, что приложение загрузилось
-  tg.expand();  // разворачиваем на всю высоту
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor?.("#0f1d1a");
+  tg.setBackgroundColor?.("#0b1513");
 }
 
-// --- Профиль пользователя ---
-const user = tg?.initDataUnsafe?.user;
-const usernameEl = document.getElementById("username");
-const avatarEl = document.getElementById("avatar");
+const $ = (id) => document.getElementById(id);
+const money = (n) => `${n.toLocaleString("ru-RU")}${CONFIG.currency}`;
 
-if (user) {
-  usernameEl.textContent = [user.first_name, user.last_name].filter(Boolean).join(" ");
-  if (user.photo_url) {
-    const img = document.createElement("img");
-    img.src = user.photo_url;
-    img.alt = "";
-    avatarEl.textContent = "";
-    avatarEl.appendChild(img);
-  } else {
-    avatarEl.textContent = user.first_name[0].toUpperCase();
+function priceFor(qty) {
+  const tier = CONFIG.tiers.find((t) => qty >= t.min && (t.max === null || qty <= t.max));
+  return tier ? tier.price : CONFIG.tiers[0].price;
+}
+
+function word(n) {
+  // ключ / ключа / ключей
+  const n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return "ключ";
+  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return "ключа";
+  return "ключей";
+}
+
+// --- Баланс ---
+$("balance").textContent = USER.balance;
+$("orders").textContent = USER.orders;
+$("bought").textContent = USER.bought;
+
+// --- Прайс-лист ---
+$("priceList").innerHTML = CONFIG.tiers
+  .map((t) => {
+    const range = t.max === null ? `${t.min}+ единиц` : `${t.min} - ${t.max} единиц`;
+    const chip = t.best ? '<span class="chip">ВЫГОДА</span>' : "";
+    return `<li class="${t.best ? "best" : ""}"><span class="range">${range}${chip}</span><span class="price">по ${money(t.price)}</span></li>`;
+  })
+  .join("");
+
+// --- Бонус ---
+$("bonusSubtitle").textContent = CONFIG.bonus.subtitle;
+$("bonusText").textContent = CONFIG.bonus.text;
+
+// --- Рефералы ---
+const ref = CONFIG.referral;
+const pct = Math.min(100, Math.round((USER.turnover / ref.unlockTurnover) * 100));
+$("refSubtitle").textContent = `${ref.percent}% с покупок рефералов после ${money(ref.unlockTurnover)} оборота`;
+$("refProgress").textContent = `${money(USER.turnover)} из ${money(ref.unlockTurnover)}`;
+$("refPercent").textContent = `${pct}%`;
+requestAnimationFrame(() => ($("refBar").style.width = `${pct}%`));
+$("refLocked").innerHTML = pct >= 100
+  ? "Реферальная система открыта 🎉"
+  : `Реферальная система откроется после оборота <b>${money(ref.unlockTurnover)}</b><br>Осталось: <b>${money(ref.unlockTurnover - USER.turnover)}</b>`;
+
+// --- Диаграмма (кольцо) ---
+(function drawDonut() {
+  const total = CONFIG.geography.reduce((s, g) => s + g.value, 0);
+  const r = 42, c = 2 * Math.PI * r;
+  let offset = 0;
+  $("donut").innerHTML = CONFIG.geography
+    .map((g) => {
+      const len = (g.value / total) * c;
+      const seg = `<circle cx="60" cy="60" r="${r}" fill="none" stroke="${g.color}" stroke-width="22"
+        stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-offset}" transform="rotate(-90 60 60)" />`;
+      offset += len;
+      return seg;
+    })
+    .join("");
+  $("legend").innerHTML = CONFIG.geography
+    .map((g) => `<li><i style="background:${g.color}"></i>${g.name} ${g.value}%</li>`)
+    .join("");
+})();
+
+// --- Паки ---
+$("packs").innerHTML = CONFIG.packs
+  .map((p) => {
+    const each = priceFor(p.qty);
+    return `<button class="pack ${p.hot ? "hot" : ""}" data-qty="${p.qty}">
+      <span class="pack-chip">${p.hot ? "HOT" : "PACK"}</span>
+      <span class="pack-qty">${p.qty} ${word(p.qty)}</span>
+      <span class="pack-price">${money(each * p.qty)}</span>
+      <span class="pack-each">${money(each)} / шт</span>
+    </button>`;
+  })
+  .join("");
+
+// --- Заказ ---
+function showTotal(inputId) {
+  const qty = parseInt($(inputId).value, 10);
+  $(inputId + "Total").textContent =
+    qty > 0 ? `${qty} ${word(qty)} × ${money(priceFor(qty))} = ${money(qty * priceFor(qty))}` : "";
+}
+
+function order(qty) {
+  if (!qty || qty < 1) {
+    notify("Введите количество");
+    return;
   }
-  document.getElementById("name").value = user.first_name;
-}
-
-document.getElementById("platform").textContent = tg
-  ? `Telegram ${tg.platform} · версия API ${tg.version}`
-  : "Открыто в браузере — откройте через бота, чтобы увидеть данные Telegram";
-
-// --- Счётчик ---
-let count = 0;
-const countEl = document.getElementById("count");
-
-function changeCount(delta) {
-  count += delta;
-  countEl.textContent = count;
-  tg?.HapticFeedback?.impactOccurred("light"); // лёгкая вибрация на телефоне
-}
-
-document.getElementById("plus").addEventListener("click", () => changeCount(1));
-document.getElementById("minus").addEventListener("click", () => changeCount(-1));
-
-// --- Форма и главная кнопка Telegram ---
-const nameInput = document.getElementById("name");
-const messageInput = document.getElementById("message");
-
-function updateMainButton() {
-  if (!tg) return;
-  if (messageInput.value.trim()) {
-    tg.MainButton.setText("Отправить");
-    tg.MainButton.show();
+  const each = priceFor(qty);
+  const sum = each * qty;
+  const bonus = qty >= CONFIG.bonus.minQty ? `\n🎁 Бонус: +1 ${CONFIG.item} в подарок` : "";
+  const text = `${qty} ${word(qty)} по ${money(each)}\nИтого: ${money(sum)}${bonus}\n\nОплата будет подключена позже.`;
+  tg?.HapticFeedback?.impactOccurred("medium");
+  if (tg?.showPopup) {
+    tg.showPopup({ title: "Ваш заказ", message: text, buttons: [{ type: "ok" }] });
   } else {
-    tg.MainButton.hide();
+    alert(text);
   }
 }
 
-messageInput.addEventListener("input", updateMainButton);
+function notify(msg) {
+  if (tg?.showAlert) tg.showAlert(msg);
+  else alert(msg);
+}
 
-tg?.MainButton.onClick(() => {
-  const name = nameInput.value.trim() || "Без имени";
-  const text = messageInput.value.trim();
-  tg.showPopup(
-    {
-      title: "Готово ✅",
-      message: `${name}, твоё сообщение получено:\n«${text}»\nСчётчик: ${count}`,
-      buttons: [{ type: "ok" }],
-    },
-    () => {
-      messageInput.value = "";
-      updateMainButton();
-    }
-  );
-});
+["qtyQuick", "qtyCustom"].forEach((id) => $(id).addEventListener("input", () => showTotal(id)));
+document.querySelectorAll("[data-order]").forEach((btn) =>
+  btn.addEventListener("click", () => order(parseInt($(btn.dataset.order).value, 10)))
+);
+document.querySelectorAll(".pack").forEach((btn) =>
+  btn.addEventListener("click", () => order(parseInt(btn.dataset.qty, 10)))
+);
+
+// --- Нижние кнопки ---
+function openLink(url, fallback) {
+  if (!url) return notify(fallback);
+  if (url.startsWith("https://t.me/") && tg?.openTelegramLink) tg.openTelegramLink(url);
+  else if (tg?.openLink) tg.openLink(url);
+  else window.open(url, "_blank");
+}
+$("btnReviews").addEventListener("click", () => openLink(CONFIG.links.reviews, "Отзывы скоро появятся"));
+$("btnSupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
+$("btnInfo").addEventListener("click", () => notify(CONFIG.info));
