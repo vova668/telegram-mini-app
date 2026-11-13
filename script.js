@@ -545,7 +545,7 @@ $("checkNow").addEventListener("click", () => {
   const net = currentCoin === "TON" ? "TON" : "USDT (сеть TON)";
   submitOrder(net, `${payAmountText} ${coinName()}`);
 });
-$("paySupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
+$("paySupport").addEventListener("click", () => openLink(CONFIG.links.support, "Контакты нашей поддержки указаны в описании бота"));
 $("xrocketGuide").addEventListener("click", () => openLink(CONFIG.ton.xrocketGuide, "Гайд скоро появится"));
 $("cryptoBack").addEventListener("click", hideCrypto);
 $("cryptoCopyAmount").addEventListener("click", () => copyText(cryptoAmountText, "Сумма скопирована"));
@@ -581,6 +581,6 @@ function openLink(url, fallback) {
   else window.open(url, "_blank");
 }
 
-$("btnReviews").addEventListener("click", () => openLink(CONFIG.links.reviews, "error"));
+
 $("btnSupport").addEventListener("click", () => openLink(CONFIG.links.support, "Контакты нашей поддержки указаны в описании бота"));
 $("btnInfo").addEventListener("click", () => notify(CONFIG.info));
