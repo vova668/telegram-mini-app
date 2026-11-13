@@ -557,7 +557,7 @@ $("cryptoCheck").addEventListener("click", () => {
   if (!cryptoChoice || !cryptoAmountText) return notify("Сумма ещё не рассчитана. Выберите монету заново.");
   submitOrder(`${cryptoChoice.coin} · ${cryptoChoice.network}`, `${cryptoAmountText} ${cryptoChoice.coin}`);
 });
-$("cryptoSupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
+$("cryptoSupport").addEventListener("click", () => openLink(CONFIG.links.support, "Контакты нашей поддержки указаны в описании бота"));
 tg?.BackButton?.onClick(goBack);
 
 function notify(msg) {
