@@ -73,6 +73,9 @@ const CONFIG = {
     { id: "bnb",        coin: "BNB",  network: "BEP20 (BSC)",   cg: "binancecoin", decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_BNB" },
   ],
 
+  // Адрес Worker на Cloudflare — сюда мини-приложение отправляет заказы
+  apiUrl: "https://tgbot.exalfa001.workers.dev",
+
   info: "Ключи активируются в Steam / Epic / другой платформе, указанной в описании. После оплаты ключ приходит сюда в чат.",
 };
 
@@ -268,6 +271,7 @@ function uniqueTail() {
 }
 
 async function showPay() {
+  orderSent = false;
   const usd = priceFor(currentQty) * currentQty;
   const coin = coinName();
   const isTon = currentCoin === "TON";
@@ -415,6 +419,7 @@ function hideCrypto() {
 }
 
 async function pickCrypto(id) {
+  orderSent = false;
   const c = CONFIG.crypto.find((x) => x.id === id);
   cryptoChoice = c;
   const usd = priceFor(currentQty) * currentQty;
@@ -461,6 +466,33 @@ async function pickCrypto(id) {
   }
 }
 
+// --- Отправка заказа администратору на проверку ---
+// Пока проверка ручная: заказ уходит админу в бот, он подтверждает оплату и отправляет ключи.
+let orderSent = false;
+
+async function submitOrder(method, amount) {
+  if (orderSent) {
+    return notify("Заказ уже отправлен на проверку. Как только оплата подтвердится, ключи придут в чат с ботом.");
+  }
+  if (!tg?.initData) {
+    return notify("Откройте магазин через бота в Telegram, чтобы оформить заказ.");
+  }
+  try {
+    const r = await fetch(`${CONFIG.apiUrl}/api/order`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: tg.initData, qty: currentQty, method, amount }),
+    });
+    const data = await r.json();
+    if (!data.ok) return notify(data.error || "Не удалось отправить заказ. Попробуйте ещё раз.");
+    orderSent = true;
+    tg?.HapticFeedback?.notificationOccurred("success");
+    notify(`Заказ #${data.orderId} отправлен на проверку. Как только оплата подтвердится, ключи придут в чат с ботом.`);
+  } catch (e) {
+    notify("Нет связи с сервером. Попробуйте ещё раз через минуту.");
+  }
+}
+
 // Системная кнопка «назад» Telegram: с экрана TON — к заказу, с заказа — в магазин
 function goBack() {
   if (!$("cryptoView").hidden) hideCrypto();
@@ -483,7 +515,11 @@ $("copyAddress").addEventListener("click", () => {
   if (!w || w.startsWith("ВСТАВЬТЕ")) return notify("Адрес кошелька ещё не указан");
   copyText(w, "Адрес скопирован");
 });
-$("checkNow").addEventListener("click", () => notify("Проверка оплаты пока не подключена."));
+$("checkNow").addEventListener("click", () => {
+  if (!payAmountText) return notify("Сумма ещё не рассчитана. Откройте экран заново.");
+  const net = currentCoin === "TON" ? "TON" : "USDT (сеть TON)";
+  submitOrder(net, `${payAmountText} ${coinName()}`);
+});
 $("paySupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
 $("xrocketGuide").addEventListener("click", () => openLink(CONFIG.ton.xrocketGuide, "Гайд скоро появится"));
 $("cryptoBack").addEventListener("click", hideCrypto);
@@ -492,7 +528,10 @@ $("cryptoCopyAddress").addEventListener("click", () => {
   if (!cryptoChoice || isPlaceholder(cryptoChoice.address)) return notify("Адрес кошелька ещё не указан");
   copyText(cryptoChoice.address, "Адрес скопирован");
 });
-$("cryptoCheck").addEventListener("click", () => notify("Проверка оплаты пока не подключена."));
+$("cryptoCheck").addEventListener("click", () => {
+  if (!cryptoChoice || !cryptoAmountText) return notify("Сумма ещё не рассчитана. Выберите монету заново.");
+  submitOrder(`${cryptoChoice.coin} · ${cryptoChoice.network}`, `${cryptoAmountText} ${cryptoChoice.coin}`);
+});
 $("cryptoSupport").addEventListener("click", () => openLink(CONFIG.links.support, "Поддержка скоро будет подключена"));
 tg?.BackButton?.onClick(goBack);
 
