@@ -56,21 +56,21 @@ const CONFIG = {
   // Оплата в сети TON
   ton: {
     // ↓↓↓ ВСТАВЬ СЮДА АДРЕС СВОЕГО TON-КОШЕЛЬКА ↓↓↓
-    wallet: "ВСТАВЬТЕ_АДРЕС_TON_КОШЕЛЬКА",
-    xrocketGuide: "", // ссылка на гайд по xRocket (если есть)
+    wallet: "UQAv02GrfvX9YrhHoz4AZrzeZQrrVF_TylfJquXR140jEecr",
+    xrocketGuide: "https://t.me/guidXrocket", // ссылка на гайд по xRocket
   },
 
   // Оплата другой криптовалютой.
   // ↓↓↓ ВСТАВЬ АДРЕСА СВОИХ КОШЕЛЬКОВ в поле address ↓↓↓
   // cg — id монеты на CoinGecko для курса (для стейблкоинов курс = 1)
   crypto: [
-    { id: "usdt_trc20", coin: "USDT", network: "TRC20 (Tron)",  cg: null,          decimals: 6, address: "ВСТАВЬТЕ_АДРЕС_USDT_TRC20" },
-    { id: "usdt_bep20", coin: "USDT", network: "BEP20 (BSC)",   cg: null,          decimals: 6, address: "ВСТАВЬТЕ_АДРЕС_USDT_BEP20" },
-    { id: "btc",        coin: "BTC",  network: "Bitcoin",       cg: "bitcoin",     decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_BTC" },
-    { id: "eth",        coin: "ETH",  network: "Ethereum",      cg: "ethereum",    decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_ETH" },
-    { id: "ltc",        coin: "LTC",  network: "Litecoin",      cg: "litecoin",    decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_LTC" },
-    { id: "trx",        coin: "TRX",  network: "Tron",          cg: "tron",        decimals: 6, address: "ВСТАВЬТЕ_АДРЕС_TRX" },
-    { id: "bnb",        coin: "BNB",  network: "BEP20 (BSC)",   cg: "binancecoin", decimals: 8, address: "ВСТАВЬТЕ_АДРЕС_BNB" },
+    { id: "usdt_trc20", coin: "USDT", network: "TRC20 (Tron)",  cg: null,          decimals: 6, address: "TTbW4AY5sAzdzidWHpbwwj8j9UkXezVaoF" },
+    { id: "usdt_bep20", coin: "USDT", network: "BEP20 (BSC)",   cg: null,          decimals: 6, address: "0x8ac6331826A4a615B2f8DC6b89A1dab78582dD6A" },
+    { id: "btc",        coin: "BTC",  network: "Bitcoin",       cg: "bitcoin",     decimals: 8, address: "bc1qhuxnj4tu93wud457cspg7tg8hvf82w7ra0jrmy" },
+    { id: "eth",        coin: "ETH",  network: "Ethereum",      cg: "ethereum",    decimals: 8, address: "0xdad7BB71217469E92dE3233FB2F71272dA89acf5" },
+    { id: "ltc",        coin: "LTC",  network: "Litecoin",      cg: "litecoin",    decimals: 8, address: "ltc1qx6hc5s2n4utq976p7sxk5d9yky2xk7wpwhyxc9" },
+    { id: "trx",        coin: "TRX",  network: "Tron",          cg: "tron",        decimals: 6, address: "TTbW4AY5sAzdzidWHpbwwj8j9UkXezVaoF" },
+    { id: "bnb",        coin: "BNB",  network: "BEP20 (BSC)",   cg: "binancecoin", decimals: 8, address: "0x8ac6331826A4a615B2f8DC6b89A1dab78582dD6A" },
   ],
 
   // Адрес Worker на Cloudflare — сюда мини-приложение отправляет заказы
@@ -79,7 +79,7 @@ const CONFIG = {
   info: "Ключи активируются в Steam / Epic / другой платформе, указанной в описании. После оплаты ключ приходит сюда в чат.",
 };
 
-// Данные пользователя. Пока нет сервера и базы — всё по нулям.
+// Данные пользователя. Загружаются с сервера (только подтверждённые заказы); пока не загрузились — нули.
 const USER = { balance: 0, orders: 0, bought: 0, turnover: 0 };
 // ================================================================
 
@@ -107,11 +107,6 @@ function word(n) {
   return "ключей";
 }
 
-// --- Баланс ---
-$("balance").textContent = USER.balance;
-$("orders").textContent = USER.orders;
-$("bought").textContent = USER.bought;
-
 // --- Прайс-лист ---
 $("priceList").innerHTML = CONFIG.tiers
   .map((t) => {
@@ -125,16 +120,45 @@ $("priceList").innerHTML = CONFIG.tiers
 $("bonusSubtitle").textContent = CONFIG.bonus.subtitle;
 $("bonusText").textContent = CONFIG.bonus.text;
 
-// --- Рефералы ---
-const ref = CONFIG.referral;
-const pct = Math.min(100, Math.round((USER.turnover / ref.unlockTurnover) * 100));
-$("refSubtitle").textContent = `${ref.percent}% с покупок рефералов после ${money(ref.unlockTurnover)} оборота`;
-$("refProgress").textContent = `${money(USER.turnover)} из ${money(ref.unlockTurnover)}`;
-$("refPercent").textContent = `${pct}%`;
-requestAnimationFrame(() => ($("refBar").style.width = `${pct}%`));
-$("refLocked").innerHTML = pct >= 100
-  ? "Реферальная система открыта 🎉"
-  : `Реферальная система откроется после оборота <b>${money(ref.unlockTurnover)}</b><br>Осталось: <b>${money(ref.unlockTurnover - USER.turnover)}</b>`;
+// --- Баланс и рефералы (обновляются, когда приходят данные с сервера) ---
+function renderUser() {
+  $("balance").textContent = USER.balance.toLocaleString("ru-RU");
+  $("orders").textContent = USER.orders;
+  $("bought").textContent = USER.bought;
+
+  const ref = CONFIG.referral;
+  const pct = Math.min(100, Math.round((USER.turnover / ref.unlockTurnover) * 100));
+  $("refSubtitle").textContent = `${ref.percent}% с покупок рефералов после ${money(ref.unlockTurnover)} оборота`;
+  $("refProgress").textContent = `${money(USER.turnover)} из ${money(ref.unlockTurnover)}`;
+  $("refPercent").textContent = `${pct}%`;
+  requestAnimationFrame(() => ($("refBar").style.width = `${pct}%`));
+  $("refLocked").innerHTML = pct >= 100
+    ? "Реферальная система открыта 🎉"
+    : `Реферальная система откроется после оборота <b>${money(ref.unlockTurnover)}</b><br>Осталось: <b>${money(Math.max(0, ref.unlockTurnover - USER.turnover))}</b>`;
+}
+
+async function loadUser() {
+  if (!tg?.initData) return; // открыто не из Telegram — оставляем нули
+  try {
+    const r = await fetch(`${CONFIG.apiUrl}/api/me`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: tg.initData }),
+    });
+    const data = await r.json();
+    if (!data.ok) return;
+    USER.balance = data.balance;
+    USER.orders = data.orders;
+    USER.bought = data.bought;
+    USER.turnover = data.balance;
+    renderUser();
+  } catch (e) {
+    // нет связи — просто показываем то, что есть
+  }
+}
+
+renderUser();
+loadUser();
 
 // --- Диаграмма (кольцо) ---
 (function drawDonut() {
@@ -208,6 +232,7 @@ function showCheckout(qty) {
 function hideCheckout() {
   $("checkoutView").hidden = true;
   $("shopView").hidden = false;
+  loadUser();
   window.scrollTo(0, 0);
   tg?.BackButton?.hide();
 }
