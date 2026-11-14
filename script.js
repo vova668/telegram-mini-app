@@ -56,7 +56,7 @@ const CONFIG = {
   // Оплата в сети TON
   ton: {
     // ↓↓↓ ВСТАВЬ СЮДА АДРЕС СВОЕГО TON-КОШЕЛЬКА ↓↓↓
-    wallet: "UQAv02GrfvX9YrhHoz4AZrzeZQrrVF_TylfJquXR140jEecr",
+    wallet: "UQBFWX6JqoFwBBm6MqA-G7ZG5WfPr4r8Ov7MytettWp0BK_b",
     xrocketGuide: "https://t.me/guidXrocket", // ссылка на гайд по xRocket
   },
 
@@ -64,13 +64,13 @@ const CONFIG = {
   // ↓↓↓ ВСТАВЬ АДРЕСА СВОИХ КОШЕЛЬКОВ в поле address ↓↓↓
   // cg — id монеты на CoinGecko для курса (для стейблкоинов курс = 1)
   crypto: [
-    { id: "usdt_trc20", coin: "USDT", network: "TRC20 (Tron)",  cg: null,          decimals: 6, address: "TTbW4AY5sAzdzidWHpbwwj8j9UkXezVaoF" },
-    { id: "usdt_bep20", coin: "USDT", network: "BEP20 (BSC)",   cg: null,          decimals: 6, address: "0x8ac6331826A4a615B2f8DC6b89A1dab78582dD6A" },
-    { id: "btc",        coin: "BTC",  network: "Bitcoin",       cg: "bitcoin",     decimals: 8, address: "bc1qhuxnj4tu93wud457cspg7tg8hvf82w7ra0jrmy" },
-    { id: "eth",        coin: "ETH",  network: "Ethereum",      cg: "ethereum",    decimals: 8, address: "0xdad7BB71217469E92dE3233FB2F71272dA89acf5" },
-    { id: "ltc",        coin: "LTC",  network: "Litecoin",      cg: "litecoin",    decimals: 8, address: "ltc1qx6hc5s2n4utq976p7sxk5d9yky2xk7wpwhyxc9" },
-    { id: "trx",        coin: "TRX",  network: "Tron",          cg: "tron",        decimals: 6, address: "TTbW4AY5sAzdzidWHpbwwj8j9UkXezVaoF" },
-    { id: "bnb",        coin: "BNB",  network: "BEP20 (BSC)",   cg: "binancecoin", decimals: 8, address: "0x8ac6331826A4a615B2f8DC6b89A1dab78582dD6A" },
+    { id: "usdt_trc20", coin: "USDT", network: "TRC20 (Tron)",  cg: null,          decimals: 6, address: "TCpJ3AbGb5AC1GRUnQNqQmvPCE5KcEoMTq" },
+    { id: "usdt_bep20", coin: "USDT", network: "BEP20 (BSC)",   cg: null,          decimals: 6, address: "0xFc4b7bbAD31845b04d0C9eC228D0B06e818CA2eE" },
+    { id: "btc",        coin: "BTC",  network: "Bitcoin",       cg: "bitcoin",     decimals: 8, address: "bc1qjn7zhynsh9anph6n0m3xp4gzzhalg0f5we59n9" },
+    { id: "eth",        coin: "ETH",  network: "Ethereum",      cg: "ethereum",    decimals: 8, address: "0x4E0448dF0e2A090e899E62Fa7Fe751a685DDf328" },
+    { id: "ltc",        coin: "LTC",  network: "Litecoin",      cg: "litecoin",    decimals: 8, address: "ltc1q7lvf34ydr8xlzjy2e70z9snfj6zdjjq3a2yrdy" },
+    { id: "trx",        coin: "TRX",  network: "Tron",          cg: "tron",        decimals: 6, address: "TCpJ3AbGb5AC1GRUnQNqQmvPCE5KcEoMTq" },
+    { id: "bnb",        coin: "BNB",  network: "BEP20 (BSC)",   cg: "binancecoin", decimals: 8, address: "0xFc4b7bbAD31845b04d0C9eC228D0B06e818CA2eE" },
   ],
 
   // Адрес Worker на Cloudflare — сюда мини-приложение отправляет заказы
